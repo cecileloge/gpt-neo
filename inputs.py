@@ -143,14 +143,17 @@ def pred_input(params, logger, enc=None,
                "researchers was the fact that the unicorns spoke perfect English."
 
     text = unicorns if path_to_prompt == "" else open(path_to_prompt, "r").read()
-    tokens = encode(enc, text)
-
-    if len(tokens) > params["n_ctx"]:
-        logger.info("The length of your input prompt is longer than the model's context length - truncating input.")
-        tokens = tokens[len(tokens) - params["n_ctx"]:]
-    if len(tokens) < params["n_ctx"]:
-        tokens = tf.pad(tokens, [[0, params["n_ctx"] - len(tokens)]], constant_values=params["padding_id"])
-    t = tf.broadcast_to(tokens, [params["batch_size"], params["n_ctx"]])
+    list_of_input = list(text.split("++++"))
+    t = tf.zeros([len(list_of_input), params["n_ctx"]])
+    for i, x in enumerate(list_of_input):
+        tokens = encode(enc, x)
+        if len(tokens) > params["n_ctx"]:
+            logger.info("The length of your input prompt is longer than the model's context length - truncating input.")
+            tokens = tokens[len(tokens) - params["n_ctx"]:]
+        if len(tokens) < params["n_ctx"]:
+            tokens = tf.pad(tokens, [[0, params["n_ctx"] - len(tokens)]], constant_values=params["padding_id"])
+        t[i,:] = tokens
+            
     dataset = tf.data.Dataset.from_tensors(t)
 
     def _dummy_labels(x):
