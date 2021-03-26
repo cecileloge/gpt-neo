@@ -144,7 +144,7 @@ def pred_input(params, logger, enc=None,
 
     text = unicorns if path_to_prompt == "" else open(path_to_prompt, "r").read()
     list_of_input = list(text.split("++++"))
-    t = tf.zeros([len(list_of_input), params["n_ctx"]])
+    tlist = []
     for i, x in enumerate(list_of_input):
         tokens = encode(enc, x)
         if len(tokens) > params["n_ctx"]:
@@ -152,8 +152,9 @@ def pred_input(params, logger, enc=None,
             tokens = tokens[len(tokens) - params["n_ctx"]:]
         if len(tokens) < params["n_ctx"]:
             tokens = tf.pad(tokens, [[0, params["n_ctx"] - len(tokens)]], constant_values=params["padding_id"])
-        t[i,:] = tokens
-            
+        tlist.append(tokens)
+    
+    t = tf.stack(tlist)
     dataset = tf.data.Dataset.from_tensors(t)
 
     def _dummy_labels(x):
